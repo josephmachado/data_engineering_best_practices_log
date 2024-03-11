@@ -20,7 +20,6 @@ services:
       - "7077:7077" # Spark master submit port, if running
       - "4040:4040" # Spark application
       - "18080:18080" # History server
-      - "9090:8080" # Spark master, if running
 
   minio:
     image: 'minio/minio:RELEASE.2023-07-21T21-12-44Z'
@@ -52,3 +51,45 @@ services:
     entrypoint: >
       /bin/sh -c " /usr/bin/mc config host add myminio http://minio:9000 minio minio123; /usr/bin/mc rm -r --force myminio/adventureworks; /usr/bin/mc mb myminio/adventureworks; /usr/bin/mc policy download myminio/adventureworks; exit 0; "
 
+  prometheus:
+    image: prom/prometheus:v2.37.1
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+  
+  grafana:
+    image: grafana/grafana:8.4.0
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=spark
+    volumes:
+      - ./monitoring/grafana/provisioning/:/etc/grafana/provisioning/
+
+  gmetad:
+    image: ganglia/gmetad:latest
+    container_name: ganglia_gmetad
+    ports:
+      - "80:80"
+    volumes:
+      - ./gmetad.conf:/etc/ganglia/gmetad.conf
+    command: gmetad -c /etc/ganglia/gmetad.conf
+
+  gmond_master:
+    image: ganglia/gmond:latest
+    container_name: ganglia_gmond_master
+    environment:
+      - GMOND_TTL=30
+      - GMOND_SPOOF_HOSTNAME=false
+    command: gmond
+
+  gmond_worker:
+    image: ganglia/gmond:latest
+    container_name: ganglia_gmond_worker
+    environment:
+      - GMOND_TTL=30
+      - GMOND_SPOOF_HOSTNAME=false
+    command: gmond

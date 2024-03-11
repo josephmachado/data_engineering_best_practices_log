@@ -1,0 +1,10 @@
+global:
+  scrape_interval:     5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: 'spark_metrics'
+    static_configs:
+      - targets: ['local-spark:4040']
+    metrics_path: '/metrics/prometheus/'
+    scheme: 'http'

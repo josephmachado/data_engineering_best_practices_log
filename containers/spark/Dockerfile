@@ -17,6 +17,7 @@ RUN pip install -r requirements.txt
 
 COPY ./containers/spark/conf/spark-defaults.conf "$SPARK_HOME/conf/spark-defaults.conf"
 COPY ./containers/spark/conf/log4j2.properties "$SPARK_HOME/conf/log4j2.properties"
+COPY ./containers/spark/conf/metrics.properties "$SPARK_HOME/conf/metrics.properties"
 
 # ENV SPARK_MASTER="spark://local-spark:7077"
 # ENV SPARK_MASTER_HOST local-spark
