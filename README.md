@@ -1,6 +1,6 @@
 # Data Engineering Best Practices - #2. Metadata & Logging
 
-Code for blog at [Data Engineering Best Practices - #2. Logging](https://www.startdataengineering.com/post/de_best_practices_log/)
+Code for blog at [Data Engineering Best Practices - #2. Metadata & Logging](https://www.startdataengineering.com/post/de_best_practices_log/)
 
 This is part of a series of posts about data engineering best practices:
 
