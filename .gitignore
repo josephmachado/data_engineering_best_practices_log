@@ -164,3 +164,5 @@ logs/
 __init__*
 
 *.pyc
+
+metastore_db

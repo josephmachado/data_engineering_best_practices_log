@@ -32,7 +32,7 @@ py-spark-sh:
 ######################################################################################################
 
 pytest:
-	docker exec -ti local-spark bash -c 'python3 -m pytest --log-cli-level info -p no:warnings -v ./adventureworks/tests'
+	docker exec -ti local-spark bash -c 'export PYTHONPATH=/opt/spark/work-dir/adventureworks/pipelines && python3 -m pytest --log-cli-level info -p no:warnings -v ./adventureworks/tests'
 
 format:
 	docker exec -ti local-spark bash -c 'python3 -m black -S --line-length 79 --preview ./adventureworks'
