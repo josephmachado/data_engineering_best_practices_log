@@ -1,4 +1,5 @@
 import inspect
+
 from utils.db import MetadatadbConnection
 
 
@@ -16,12 +17,14 @@ def log_metadata(func):
         for v in input_params.get("args"):
             input_dict[param_names.pop(0)] = v
 
-        # We insert the runs unique id, name of the pipeline, & all the inputs to the
-        # function
+        # We insert the runs unique id, name of the pipeline,
+        # & all the inputs to the function
         run_id = input_params.get("kwargs").get("run_id")
         pipeline_id = input_params.get("kwargs").get("pipeline_id")
         run_params = str(
-            input_dict | input_params.get("kwargs") | {"function": func.__name__}
+            input_dict
+            | input_params.get("kwargs")
+            | {"function": func.__name__}
         )
 
         db_conn = MetadatadbConnection()

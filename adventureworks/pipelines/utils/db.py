@@ -1,5 +1,5 @@
-from contextlib import contextmanager
 import os
+from contextlib import contextmanager
 
 import psycopg2
 
@@ -45,5 +45,5 @@ class MetadatadbConnection:
 
     def __str__(self) -> str:
         return (
-            f"{self._db_type}://{self._user}@{self._host}:{self._port}/{self._dbname}"
+            f"postgres://{self._user}@{self._host}:{self._port}/{self._dbname}"
         )

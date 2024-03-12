@@ -1,5 +1,5 @@
-import sys
 import os
+import sys
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
@@ -9,9 +9,7 @@ import great_expectations as gx
 from delta.tables import DeltaTable
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import col, current_timestamp, expr, lit
-
 from utils.create_fake_data import generate_bronze_data
-
 from utils.metadata import log_metadata
 
 
@@ -158,11 +156,13 @@ class StandardETL(ABC):
         run_id = kwargs.get("run_id")
 
         logger.info(
-            f"Starting run process for pipeline_id: {pipeline_id}, run_id: {run_id}, partition: {partition}"
+            f"Starting run process for pipeline_id: {pipeline_id}, run_id:"
+            f" {run_id}, partition: {partition}"
         )
 
         logger.info(
-            f"Starting get_bronze_dataset for pipeline_id: {pipeline_id}, run_id: {run_id}, partition: {partition}"
+            f"Starting get_bronze_dataset for pipeline_id: {pipeline_id},"
+            f" run_id: {run_id}, partition: {partition}"
         )
         bronze_data_sets = self.get_bronze_datasets(
             spark, partition=partition, run_id=run_id, pipeline_id=pipeline_id
@@ -175,7 +175,8 @@ class StandardETL(ABC):
         )
 
         logger.info(
-            f"Starting get_silver_dataset for pipeline_id: {pipeline_id}, run_id: {run_id}, partition: {partition}"
+            f"Starting get_silver_dataset for pipeline_id: {pipeline_id},"
+            f" run_id: {run_id}, partition: {partition}"
         )
         silver_data_sets = self.get_silver_datasets(
             bronze_data_sets,
@@ -192,7 +193,8 @@ class StandardETL(ABC):
         )
 
         logger.info(
-            f"Starting get_gold_dataset for pipeline_id: {pipeline_id}, run_id: {run_id}, partition: {partition}"
+            f"Starting get_gold_dataset for pipeline_id: {pipeline_id},"
+            f" run_id: {run_id}, partition: {partition}"
         )
         gold_data_sets = self.get_gold_datasets(
             silver_data_sets,
@@ -447,10 +449,11 @@ if __name__ == "__main__":
     spark = (
         SparkSession.builder.appName("adventureworks").enableHiveSupport().getOrCreate()
     )
-    spark.sparkContext.setLogLevel("ERROR")
-    log4j_logger = spark._jvm.org.apache.log4j  # noqa
+    # spark.sparkContext.setLogLevel("ERROR")
+    log4j_logger = spark._jvm.org.apache.log4j  # type: ignore
     global logger
     logger = log4j_logger.LogManager.getLogger("adventureworks_logger")
+    logger.info("Starting Sales Mart ETL")
     sm = SalesMartETL()
 
     # Partition as input, usually from orchestrator
@@ -460,6 +463,10 @@ if __name__ == "__main__":
         else datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     )
     pipeline_id = "sales_mart"
-    run_id = f"{pipeline_id}_{partition}_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}"
+    run_id = (
+        f"{pipeline_id}_"
+        f"{partition}_"
+        f"{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}"
+    )
     sm.run(spark, partition=partition, run_id=run_id, pipeline_id=pipeline_id)
     spark.stop
