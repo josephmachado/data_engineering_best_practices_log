@@ -1,13 +1,13 @@
-# Data Engineering Best Practices - #2. Logging
+# Data Engineering Best Practices - #2. Metadata & Logging
 
 Code for blog at [Data Engineering Best Practices - #2. Logging](https://www.startdataengineering.com/post/de_best_practices_log/)
 
 This is part of a series of posts about data engineering best practices:
 
 1. [Data Engineering Best Practices - #1. Data flow & Code](https://www.startdataengineering.com/post/de_best_practices/)
-2. [Data Engineering Best Practices - #2. Logging](https://www.startdataengineering.com/post/de_best_practices_log/)
+2. [Data Engineering Best Practices - #2. Metadata & Logging](https://www.startdataengineering.com/post/de_best_practices_log/)
 
-# Project 
+# Project
 
 For project overview and architecture refer to [this Data flow & code repo](https://github.com/josephmachado/data_engineering_best_practices).
 
