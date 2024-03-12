@@ -42,6 +42,8 @@ services:
       POSTGRES_DB: metadatadb
     ports:
       - "5432:5432"
+    volumes:
+      - ./containers/metadata/1-metadata-table.sql:/docker-entrypoint-initdb.d/init.sql
 
   createbuckets:
     image: minio/mc
@@ -68,28 +70,3 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=spark
     volumes:
       - ./monitoring/grafana/provisioning/:/etc/grafana/provisioning/
-
-  gmetad:
-    image: ganglia/gmetad:latest
-    container_name: ganglia_gmetad
-    ports:
-      - "80:80"
-    volumes:
-      - ./gmetad.conf:/etc/ganglia/gmetad.conf
-    command: gmetad -c /etc/ganglia/gmetad.conf
-
-  gmond_master:
-    image: ganglia/gmond:latest
-    container_name: ganglia_gmond_master
-    environment:
-      - GMOND_TTL=30
-      - GMOND_SPOOF_HOSTNAME=false
-    command: gmond
-
-  gmond_worker:
-    image: ganglia/gmond:latest
-    container_name: ganglia_gmond_worker
-    environment:
-      - GMOND_TTL=30
-      - GMOND_SPOOF_HOSTNAME=false
-    command: gmond

@@ -1,4 +1,4 @@
-import logging
+import sys
 import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -10,96 +10,9 @@ from delta.tables import DeltaTable
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import col, current_timestamp, expr, lit
 
-try:
-    from adventureworks.pipelines.utils.create_fake_data import generate_bronze_data
-except ModuleNotFoundError:
-    from utils.create_fake_data import generate_bronze_data  # type: ignore
+from utils.create_fake_data import generate_bronze_data
 
-import inspect
-import psycopg2
-from logging import Logger
-from typing import Dict, Any, Optional
-
-
-class LoggerProvider:
-    def get_logger(self, spark: SparkSession, custom_prefix: Optional[str] = ""):
-        log4j_logger = spark._jvm.org.apache.log4j  # noqa
-        return log4j_logger.LogManager.getLogger(custom_prefix + self.__full_name__())
-
-    def __full_name__(self):
-        klass = self.__class__
-        module = klass.__module__
-        if module == "__builtin__":
-            return klass.__name__  # avoid outputs like '__builtin__.str'
-        return module + "." + klass.__name__
-
-
-def log_metadata(func):
-    def log_wrapper(*args, **kwargs):
-        input_params = dict(
-            zip(list(locals().keys())[:-1], list(locals().values())[:-1])
-        )
-        param_names = list(
-            inspect.signature(func).parameters.keys()
-        )  # order is preserved
-        # match with input_params.get('args') and
-        # then input_params.get('kwargs')
-        input_dict = {}
-        for v in input_params.get("args"):
-            input_dict[param_names.pop(0)] = v
-
-        # json_data = json.dumps(input_params.get("kwargs"))
-        # log timestamp, function name, run id,
-        conn = psycopg2.connect(
-            host="metadata",
-            database="metadatadb",
-            user="sdeuser",
-            password="sdepassword",
-            port="5432",
-        )
-        # Create a cursor object
-        cur = conn.cursor()
-
-        # Execute the CREATE TABLE IF NOT EXISTS statement
-        cur.execute(
-            """
-        CREATE TABLE IF NOT EXISTS run_metadata (
-            run_id VARCHAR,
-            pipeline_id VARCHAR,
-            run_params VARCHAR,
-            ts_inserted TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-        """
-        )
-
-        # Commit the transaction
-        conn.commit()
-        # Execute a simple SQL query
-        # Define the INSERT query
-        insert_query = """
-        INSERT INTO run_metadata (run_id, pipeline_id, run_params)
-        VALUES (%s, %s, %s);
-        """
-        # Define the data to be inserted
-        run_id = input_params.get("kwargs").get("run_id")
-        pipeline_id = input_params.get("kwargs").get("pipeline_id")
-        run_params = str(
-            input_dict | input_params.get("kwargs") | {"function": func.__name__}
-        )
-
-        # Execute the INSERT query
-        cur.execute(insert_query, (run_id, pipeline_id, run_params))
-
-        # Commit the transaction
-        conn.commit()
-
-        # Close the cursor and connection
-        cur.close()
-        conn.close()
-
-        return func(*args, **kwargs)
-
-    return log_wrapper
+from utils.metadata import log_metadata
 
 
 @dataclass
@@ -244,11 +157,11 @@ class StandardETL(ABC):
         pipeline_id = kwargs.get("pipeline_id")
         run_id = kwargs.get("run_id")
 
-        logging.info(
+        logger.info(
             f"Starting run process for pipeline_id: {pipeline_id}, run_id: {run_id}, partition: {partition}"
         )
 
-        logging.info(
+        logger.info(
             f"Starting get_bronze_dataset for pipeline_id: {pipeline_id}, run_id: {run_id}, partition: {partition}"
         )
         bronze_data_sets = self.get_bronze_datasets(
@@ -256,12 +169,12 @@ class StandardETL(ABC):
         )
         self.validate_data(bronze_data_sets, run_id=run_id, pipeline_id=pipeline_id)
         self.publish_data(bronze_data_sets, spark)
-        logging.info(
+        logger.info(
             "Created, validated & published bronze datasets:"
             f" {[ds for ds in bronze_data_sets.keys()]}"
         )
 
-        logging.info(
+        logger.info(
             f"Starting get_silver_dataset for pipeline_id: {pipeline_id}, run_id: {run_id}, partition: {partition}"
         )
         silver_data_sets = self.get_silver_datasets(
@@ -273,12 +186,12 @@ class StandardETL(ABC):
         )
         self.validate_data(silver_data_sets, run_id=run_id, pipeline_id=pipeline_id)
         self.publish_data(silver_data_sets, spark)
-        logging.info(
+        logger.info(
             "Created, validated & published silver datasets:"
             f" {[ds for ds in silver_data_sets.keys()]}"
         )
 
-        logging.info(
+        logger.info(
             f"Starting get_gold_dataset for pipeline_id: {pipeline_id}, run_id: {run_id}, partition: {partition}"
         )
         gold_data_sets = self.get_gold_datasets(
@@ -290,7 +203,7 @@ class StandardETL(ABC):
         )
         self.validate_data(gold_data_sets, run_id=run_id, pipeline_id=pipeline_id)
         self.publish_data(gold_data_sets, spark)
-        logging.info(
+        logger.info(
             "Created, validated & published gold datasets:"
             f" {[ds for ds in gold_data_sets.keys()]}"
         )
@@ -536,19 +449,17 @@ if __name__ == "__main__":
     )
     spark.sparkContext.setLogLevel("ERROR")
     log4j_logger = spark._jvm.org.apache.log4j  # noqa
-    spark_logger = log4j_logger.LogManager.getLogger("Custom Logger")
-    spark_logger.debug("some debugging message")
-    spark_logger.info("some info message")
-    spark_logger.warn("some warning message")
-    spark_logger.error("some error message")
-    spark_logger.fatal("some fatal message")
-
-    # https://polarpersonal.medium.com/writing-pyspark-logs-in-apache-spark-and-databricks-8590c28d1d51 for logging
+    global logger
+    logger = log4j_logger.LogManager.getLogger("adventureworks_logger")
     sm = SalesMartETL()
-    partition = datetime.now().strftime(
-        "%Y-%m-%d-%H-%M-%S"
-    )  # usually from orchestrator -%S
+
+    # Partition as input, usually from orchestrator
+    partition = (
+        sys.argv[1]
+        if len(sys.argv) > 1
+        else datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    )
     pipeline_id = "sales_mart"
-    run_id = f"{pipeline_id}_{partition}"
+    run_id = f"{pipeline_id}_{partition}_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}"
     sm.run(spark, partition=partition, run_id=run_id, pipeline_id=pipeline_id)
     spark.stop

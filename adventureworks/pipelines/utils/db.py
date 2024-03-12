@@ -1,56 +1,49 @@
-import sqlite3
 from contextlib import contextmanager
-from typing import Iterator
+import os
+
+import psycopg2
 
 
-class DatabaseConnection:
-    def __init__(
-        self, db_type: str = "sqlite3", db_file: str = "data/socialetl.db"
-    ) -> None:
+class MetadatadbConnection:
+    def __init__(self) -> None:
         """Class to connect to a database.
 
         Args:
-            db_type (str, optional): Database type.
-                Defaults to 'sqlite3'.
-            db_file (str, optional): Database file.
-                Defaults to 'data/socialetl.db'.
+            host (str, optional): Hostname of the database server.
+            port (str, optional): Port number of the database server.
+            dbname (str, optional): Name of the database.
+            user (str, optional): Username for the database connection.
+            password (str, optional): Password for the database connection.
         """
-        self._db_type = db_type
-        self._db_file = db_file
+        self._host = os.getenv("METADATA_HOST", "localhost")
+        self._port = os.getenv("METADATA_PORT", "5432")
+        self._dbname = os.getenv("METADATA_DATABASE", "mydatabase")
+        self._user = os.getenv("METADATA_USERNAME", "myuser")
+        self._password = os.getenv("METADATA_PASSWORD", "mypassword")
 
     @contextmanager
-    def managed_cursor(self) -> Iterator[sqlite3.Cursor]:
+    def managed_cursor(self):
         """Function to create a managed database cursor.
 
         Yields:
-            sqlite3.Cursor: A sqlite3 cursor.
+            psycopg2.cursor: A database cursor.
         """
-        if self._db_type == "sqlite3":
-            _conn = sqlite3.connect(self._db_file)
-            cur = _conn.cursor()
-            try:
-                yield cur
-            finally:
-                _conn.commit()
-                cur.close()
-                _conn.close()
+        _conn = psycopg2.connect(
+            host=self._host,
+            port=self._port,
+            dbname=self._dbname,
+            user=self._user,
+            password=self._password,
+        )
+        cur = _conn.cursor()
+        try:
+            yield cur
+        finally:
+            _conn.commit()
+            cur.close()
+            _conn.close()
 
     def __str__(self) -> str:
-        return f"{self._db_type}://{self._db_file}"
-
-
-def db_factory(
-    db_type: str = "sqlite3", db_file: str = "data/socialetl.db"
-) -> DatabaseConnection:
-    """Function to create an ETL object.
-
-    Args:
-        db_type (str, optional): Database type.
-            Defaults to 'sqlite3'.
-        db_file (str, optional): Database file.
-            Defaults to 'data/socialetl.db'.
-
-    Returns:
-        DatabaseConnection: A DatabaseConnection object.
-    """
-    return DatabaseConnection(db_type=db_type, db_file=db_file)
+        return (
+            f"{self._db_type}://{self._user}@{self._host}:{self._port}/{self._dbname}"
+        )
