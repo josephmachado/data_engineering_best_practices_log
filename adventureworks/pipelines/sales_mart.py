@@ -68,12 +68,14 @@ class StandardETL(ABC):
         ).list_validation_results()
 
     @log_metadata
-    def validate_data(self, input_datasets: Dict[str, DeltaDataSet], **kwargs) -> bool:
+    def validate_data(
+        self, input_datasets: Dict[str, DeltaDataSet], **kwargs
+    ) -> bool:
         results = {}
         for validation in self.run_data_validations(input_datasets):
-            results[validation.get("meta").get("expectation_suite_name")] = (
-                validation.get("success")
-            )
+            results[
+                validation.get("meta").get("expectation_suite_name")
+            ] = validation.get("success")
         for k, v in results.items():
             if not v:
                 raise InValidDataException(
@@ -112,12 +114,16 @@ class StandardETL(ABC):
                         f"partition = '{input_dataset.partition}'",
                     ).save(input_dataset.storage_path)
                 else:
-                    targetDF = DeltaTable.forPath(spark, input_dataset.storage_path)
+                    targetDF = DeltaTable.forPath(
+                        spark, input_dataset.storage_path
+                    )
                     (
                         targetDF.alias("target")
                         .merge(
                             curr_data.alias("source"),
-                            self.construct_join_string(input_dataset.primary_keys),
+                            self.construct_join_string(
+                                input_dataset.primary_keys
+                            ),
                         )
                         .whenMatchedUpdateAll()
                         .whenNotMatchedInsertAll()
@@ -167,7 +173,9 @@ class StandardETL(ABC):
         bronze_data_sets = self.get_bronze_datasets(
             spark, partition=partition, run_id=run_id, pipeline_id=pipeline_id
         )
-        self.validate_data(bronze_data_sets, run_id=run_id, pipeline_id=pipeline_id)
+        self.validate_data(
+            bronze_data_sets, run_id=run_id, pipeline_id=pipeline_id
+        )
         self.publish_data(bronze_data_sets, spark)
         logger.info(
             "Created, validated & published bronze datasets:"
@@ -185,7 +193,9 @@ class StandardETL(ABC):
             run_id=run_id,
             pipeline_id=pipeline_id,
         )
-        self.validate_data(silver_data_sets, run_id=run_id, pipeline_id=pipeline_id)
+        self.validate_data(
+            silver_data_sets, run_id=run_id, pipeline_id=pipeline_id
+        )
         self.publish_data(silver_data_sets, spark)
         logger.info(
             "Created, validated & published silver datasets:"
@@ -203,7 +213,9 @@ class StandardETL(ABC):
             run_id=run_id,
             pipeline_id=pipeline_id,
         )
-        self.validate_data(gold_data_sets, run_id=run_id, pipeline_id=pipeline_id)
+        self.validate_data(
+            gold_data_sets, run_id=run_id, pipeline_id=pipeline_id
+        )
         self.publish_data(gold_data_sets, spark)
         logger.info(
             "Created, validated & published gold datasets:"
@@ -262,7 +274,10 @@ class SalesMartETL(StandardETL):
             customer_df.join(
                 dim_customer_latest,
                 (customer_df.id == dim_customer_latest.id)
-                & (dim_customer_latest.datetime_updated < customer_df.datetime_updated),
+                & (
+                    dim_customer_latest.datetime_updated
+                    < customer_df.datetime_updated
+                ),
                 "leftanti",
             )
             .select(
@@ -284,7 +299,10 @@ class SalesMartETL(StandardETL):
             customer_df.join(
                 dim_customer_latest,
                 (customer_df.id == dim_customer_latest.id)
-                & (dim_customer_latest.datetime_updated < customer_df.datetime_updated),
+                & (
+                    dim_customer_latest.datetime_updated
+                    < customer_df.datetime_updated
+                ),
             )
             .select(
                 customer_df.id,
@@ -304,7 +322,10 @@ class SalesMartETL(StandardETL):
             dim_customer_latest.join(
                 customer_df,
                 (dim_customer_latest.id == customer_df.id)
-                & (dim_customer_latest.datetime_updated < customer_df.datetime_updated),
+                & (
+                    dim_customer_latest.datetime_updated
+                    < customer_df.datetime_updated
+                ),
             )
             .select(
                 dim_customer_latest.id,
@@ -428,7 +449,9 @@ class SalesMartETL(StandardETL):
         spark: SparkSession,
         **kwargs,
     ) -> Dict[str, DeltaDataSet]:
-        self.check_required_inputs(input_datasets, ["dim_customer", "fct_orders"])
+        self.check_required_inputs(
+            input_datasets, ["dim_customer", "fct_orders"]
+        )
         sales_mart_df = self.get_sales_mart(input_datasets)
         return {
             "sales_mart": DeltaDataSet(
@@ -447,7 +470,9 @@ class SalesMartETL(StandardETL):
 
 if __name__ == "__main__":
     spark = (
-        SparkSession.builder.appName("adventureworks").enableHiveSupport().getOrCreate()
+        SparkSession.builder.appName("adventureworks")
+        .enableHiveSupport()
+        .getOrCreate()
     )
     # spark.sparkContext.setLogLevel("ERROR")
     log4j_logger = spark._jvm.org.apache.log4j  # type: ignore
