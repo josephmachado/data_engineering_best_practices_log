@@ -11,6 +11,10 @@ This is part of a series of posts about data engineering best practices:
 
 For project overview and architecture refer to [this Data flow & code repo](https://github.com/josephmachado/data_engineering_best_practices).
 
+# Logging architecture
+
+![logging architecture](assets/images/logging.png)
+
 # Setup
 
 If you'd like to code along, you'll need 
@@ -50,10 +54,6 @@ exit
 ```
 
 Use `make down` to spin down containers.
-
-# Logging architecture
-
-![logging architecture](assets/images/logging.png)
 
 # Infrastructure components
 
