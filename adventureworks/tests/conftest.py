@@ -1,5 +1,3 @@
-import os
-
 import pyspark
 import pytest
 from delta import configure_spark_with_delta_pip
@@ -7,7 +5,6 @@ from delta import configure_spark_with_delta_pip
 
 @pytest.fixture(scope="session")
 def spark():
-    os.chdir("/opt/spark/work-dir/adventureworks/pipelines")
     my_packages = [
         "io.delta:delta-core_2.12:2.3.0",
         "org.apache.hadoop:hadoop-aws:3.3.2",

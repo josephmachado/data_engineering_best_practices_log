@@ -1,6 +1,6 @@
-# Data Engineering Best Practices
+# Data Engineering Best Practices - #2. Logging
 
-Code for blog at [Data Engineering Best Practices - #1. Data flow & Code](https://www.startdataengineering.com/post/de_best_practices/)
+Code for blog at [Data Engineering Best Practices - #1. Data flow & Code](https://www.startdataengineering.com/post/de_best_practices_log/)
 
 # Project 
 
